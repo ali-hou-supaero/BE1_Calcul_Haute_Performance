@@ -14,8 +14,12 @@ void make_palette(int n, unsigned char colors[n][3], int k, struct spng_plte * p
 	double means[k][3];
 	int * clusters = malloc(n*sizeof(int));
 	unsigned int rand_state = 0;
-	int nb_threads = 8;
+	int nb_threads = 1;
+	struct timespec start, end;
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	int niter = kmeans(3, n, k, dcolors, means, clusters, MAX_ITER, &rand_state, nb_threads);
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	printf("Total time for kmeans: %f seconds\n", get_delta(start, end));
 	printf("Niter = %d\n",niter);
 	for (int i = 0; i < n; i++) {
 		assign[i] = clusters[i];
@@ -30,6 +34,8 @@ void make_palette(int n, unsigned char colors[n][3], int k, struct spng_plte * p
 }
 
 int main(int argc, char * argv[]) {
+	struct timespec start, end;
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	if (argc < 4) {
 		printf("Usage : %s <input.png> <output.png> <n_colors>\n", argv[0]);
 		return -1;
@@ -61,7 +67,11 @@ int main(int argc, char * argv[]) {
 	struct spng_plte palette;
 	unsigned char * assign = malloc(width*height);
 	int k = atoi(argv[3]);
+	struct timespec start_make_palette, end_make_palette;
+	clock_gettime(CLOCK_MONOTONIC, &start_make_palette);
 	make_palette(width*height, image, k, &palette, assign);
+	clock_gettime(CLOCK_MONOTONIC, &end_make_palette);
+	printf("Total time for making palette: %f seconds\n", get_delta(start_make_palette, end_make_palette));
 
 	free(image);
 
@@ -81,5 +91,7 @@ int main(int argc, char * argv[]) {
 	spng_ctx_free(ctx);
 	fclose(output);
 	free(assign);
+	clock_gettime(CLOCK_MONOTONIC, &end);
+	printf("Total time for compress algorithm: %f seconds\n", get_delta(start, end));
 	return 0;
 }

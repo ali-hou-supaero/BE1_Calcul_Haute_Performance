@@ -49,8 +49,9 @@ int main(int argc, char * argv[]) {
 		clock_gettime(CLOCK_MONOTONIC, &start);
 		int nb_iter = kmeans(2, n, k, points, means, clusters, 100, &rand_state, nb_threads);
 		clock_gettime(CLOCK_MONOTONIC, &end);
-		printf("NB iter: %d\n", nb_iter);
 		printf("Time taken for kmeans: %f seconds\n", get_delta(start, end));
+		printf("NB iter: %d\n", nb_iter);
+		
 
 		for (int i = 0; i < k; i++) {
 			printf("Cluster %d : (", i);
