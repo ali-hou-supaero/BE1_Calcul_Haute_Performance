@@ -144,7 +144,7 @@ void kmeans_compute_means(int d, int n, int k, double points[n][d], double means
 		nb_points[j] = 0;
 	}
 
-	// Création des tableaux locaux (par thread) avec un padding pour éviter lefalse sharing
+	// Création des tableaux locaux (par thread) avec un padding pour éviter le false sharing
 	int padding = 8;
 	double local_means[nb_threads][k + padding][d];
 	int local_counts[nb_threads][k + padding];

@@ -14,7 +14,8 @@ void make_palette(int n, unsigned char colors[n][3], int k, struct spng_plte * p
 	double means[k][3];
 	int * clusters = malloc(n*sizeof(int));
 	unsigned int rand_state = 0;
-	int nb_threads = 1;
+	int nb_threads = 8;
+	printf("Starting kmeans with nb_threads = %d\n", nb_threads);
 	struct timespec start, end;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	int niter = kmeans(3, n, k, dcolors, means, clusters, MAX_ITER, &rand_state, nb_threads);
