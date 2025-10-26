@@ -104,31 +104,92 @@ bool kmeans_assign_clusters(int d, int n, int k, double points[n][d], double mea
 }
 
 void kmeans_compute_means(int d, int n, int k, double points[n][d], double means[k][d], int clusters[n], int nb_threads) {
-	int nb_points[k];
-	for (int j = 0; j < k; j++) {
-		for (int x = 0; x < d; x++) {
-			means[j][x] = 0;
-		}
-		nb_points[j] = 0;
-	}
+	// int nb_points[k];
+
+	// // Si k est assez grand, alors on peut paralléliser cette boucle
+	// #pragma omp parallel for
+	// for (int j = 0; j < k; j++) {
+	// 	for (int x = 0; x < d; x++) {
+	// 		means[j][x] = 0;
+	// 	}
+	// 	nb_points[j] = 0;
+	// }
+
 	// On ne peut pas faire une réduction sur le tableau nb_points
-	// Il faut faire une réduction déguiser en initialisant des tableau pour chaque threads
+	// Il faut faire une réduction déguisée en initialisant des tableau pour chaque threads
 	// Après etre sorti de la région parallèle, on fait la somme des tableaux
 	// omp_set_num_threads(nb_threads);
 	// #pragma omp parallel for reduction(+:nb_points)
-	for (int i = 0; i < n; i++) {
-		int j = clusters[i];
-		// int id = omp_get_thread_num();
-		for (int x = 0; x < d; x++) {
-			means[j][x] += points[i][x];
-		}
-		nb_points[j]++;
-	}
+	// for (int i = 0; i < n; i++) {
+	// 	int j = clusters[i];
+	// 	// int id = omp_get_thread_num();
+	// 	for (int x = 0; x < d; x++) {
+	// 		means[j][x] += points[i][x];
+	// 	}
+	// 	nb_points[j]++;
+	// }
 
+	// for (int j = 0; j < k; j++) {
+	// 	for (int x = 0; x < d; x++) {
+	// 		means[j][x] /= nb_points[j];
+	// 	}
+	// }
+
+	int nb_points[k];
+	// Boucle parallélisable si k petit
 	for (int j = 0; j < k; j++) {
 		for (int x = 0; x < d; x++) {
-			means[j][x] /= nb_points[j];
+			means[j][x] = 0.0;
+		}
+		nb_points[j] = 0;
+	}
+
+	// Création des tableaux locaux (par thread) avec un padding pour éviter lefalse sharing
+	int padding = 8;
+	double local_means[nb_threads][k + padding][d];
+	int local_counts[nb_threads][k + padding];
+
+	// Initialisation
+	for (int t = 0; t < nb_threads; t++) {
+		for (int j = 0; j < k; j++) {
+			local_counts[t][j] = 0;
+			for (int x = 0; x < d; x++) {
+				local_means[t][j][x] = 0.0;
+			}
+		}
+	}
+
+	// Boucle originale parallélisée
+	omp_set_num_threads(nb_threads);
+	#pragma omp parallel
+	{
+		int thread_id = omp_get_thread_num();
+		#pragma omp for schedule(static)
+		for (int i = 0; i < n; i++) {
+			int j = clusters[i];
+			for (int x = 0; x < d; x++) {
+				local_means[thread_id][j][x] += points[i][x];
+			}
+			local_counts[thread_id][j]++;
+		}
+	}
+
+	// Fusion des résultats
+	for (int j = 0; j < k; j++) {
+		nb_points[j] = 0;
+		for (int x = 0; x < d; x++) {
+			means[j][x] = 0.0;
+		}
+		for (int t = 0; t < nb_threads; t++) {
+			nb_points[j] += local_counts[t][j];
+			for (int x = 0; x < d; x++) {
+				means[j][x] += local_means[t][j][x];
+			}
+		}
+		if (nb_points[j] > 0) {
+			for (int x = 0; x < d; x++) {
+				means[j][x] /= nb_points[j];
+			}
 		}
 	}
 }
-

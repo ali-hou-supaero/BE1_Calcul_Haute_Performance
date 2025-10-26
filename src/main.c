@@ -34,7 +34,7 @@ int main(int argc, char * argv[]) {
 	double sigma = 3.0;
 	int n_per_center = 300000;
 	int n = n_per_center * n_centers;
-	
+
 	double (* points)[2] = malloc(n*2*sizeof(double));
 	for (int i_center = 0; i_center < n_centers; i_center++) {
 		generate_points(n_per_center, centers[i_center], sigma, points + (i_center*n_per_center), &rand_state);
